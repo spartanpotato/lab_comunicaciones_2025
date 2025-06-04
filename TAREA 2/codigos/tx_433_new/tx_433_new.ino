@@ -13,10 +13,42 @@ pin 10 5v
 
 #include <VirtualWire.h>
 
-const char* mensajeCompleto = "Este es un mensaje muy largo que no cabe en un solo paquete de VirtualWire.";
+const char* mensajeCompleto = "11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111110011111111011111111111"
+"11111111000000111100000011111111"
+"11111110000000011000000001111111"
+"11111110000000000000000001111111"
+"11111100000000000000000000111111"
+"11111100000000000000000000111111"
+"11111100000000000000000000111111"
+"11111110000000000000000001111111"
+"11111110000000000000000001111111"
+"11111110000000000000000001111111"
+"11111111000000000000000011111111"
+"11111111100000000000000111111111"
+"11111111110000000000001111111111"
+"11111111111000000000011111111111"
+"11111111111100000000111111111111"
+"11111111111110000001111111111111"
+"11111111111111000011111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111";
+const char* mensajeCompleno = "Este es un mensaje muy largo que no cabe en un solo paquete de VirtualWire.";
 
 const int TAMANO_MENSAJE = 3;
-const int TAMANO_TOTAL = 1 + 1 + 1 + TAMANO_MENSAJE + 1; // +1 para CRC8
+const int TAMANO_TOTAL = 1 + 1 + 1 + TAMANO_MENSAJE; // +1 para CRC8
 uint8_t paquete[TAMANO_TOTAL];
 
 const uint8_t id_emisor = 2;
@@ -37,24 +69,41 @@ void setup() {
 }
 
 void loop() {
-  int longitud = strlen(mensajeCompleto);
+  int longitud_bits = strlen(mensajeCompleto);
+  int longitud = longitud_bits / 8;
   int enviados = 0;
   uint8_t secuencia = 0;
 
-  while (enviados < longitud) {
-    int largoParcial = min(TAMANO_MENSAJE, longitud - enviados);
+  while (enviados < longitud_bits) {
+    int bits_restantes = longitud_bits - enviados;
+    int largoParcial = min(TAMANO_MENSAJE, bits_restantes / 8);
 
     paquete[0] = secuencia;
     paquete[1] = id_emisor;
     paquete[2] = id_receptor;
 
+
     for (int i = 0; i < largoParcial; i++) {
-      paquete[3 + i] = (uint8_t)mensajeCompleto[enviados + i];
+      uint8_t b = 0;
+      for (int j = 0; j < 8; j++) {
+        int bitIndex = enviados + i * 8 + j;
+        if (bitIndex < longitud_bits) {
+          b |= (mensajeCompleto[bitIndex] - '0') << (7 - j);
+        }
+      }
+      paquete[3 + i] = b;
     }
 
-    paquete[3 + largoParcial] = crc8(paquete, 3 + largoParcial);
+    // Rellenar con ceros si largoParcial es menor que TAMANO_MENSAJE
+    if (largoParcial < TAMANO_MENSAJE) {
+      for (int i = largoParcial; i < TAMANO_MENSAJE; i++) {
+        paquete[3 + i] = 0;  // Rellenar con 0
+      }
+    }
 
-    vw_send(paquete, 3 + largoParcial + 1);
+    //paquete[3 + largoParcial] = crc8(paquete, 3 + largoParcial);
+
+    vw_send(paquete, 3 + largoParcial); // + 1 para crc
     vw_wait_tx();
 
     Serial.print("Enviado: ");
@@ -63,12 +112,20 @@ void loop() {
     Serial.print(" RECEPTOR: "); Serial.print(id_receptor);
     Serial.print(" MSG: ");
     for (int i = 0; i < largoParcial; i++) {
-      Serial.print((char)paquete[3 + i]);
+      uint8_t b = paquete[3 + i];
+      for (int j = 7; j >= 0; j--) {
+        Serial.print((b >> j) & 1);
+      }
     }
-    Serial.print(" CRC: "); Serial.print(paquete[3 + largoParcial], HEX);
     Serial.println();
 
-    enviados += largoParcial;
+    //Serial.print(" CRC: "); Serial.print(paquete[3 + largoParcial], HEX);
+    Serial.println();
+
+    enviados += largoParcial * 8;
+    if (largoParcial == 0 || enviados >= longitud_bits) {
+      break; // Terminar el bucle si se han enviado todos los bits.
+    }
     secuencia++;
     delay(1000);
   }
