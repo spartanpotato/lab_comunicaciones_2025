@@ -20,7 +20,7 @@ int const MESSAGE_TAM = 3; //Bytes
 int const ID = 2;
 int const ID_RECEPTOR = 2;
 int const TAM = 6;
-int const TAM_ARRAY = (32*32)/24;
+int const TAM_ARRAY = (32*32)/24 + 1;
 String messages[TAM_ARRAY];
 String image_total = "";
 
@@ -35,6 +35,14 @@ String image_total = "";
 
 //     1         2       3 
 // [ "hola" , "como", "estas"]
+
+
+
+uint8_t crc8(const uint8_t *d, uint8_t n) {
+  uint8_t crc = 0x00;
+  while(n--) { crc ^= *d++; for(uint8_t i=0; i<8; i++) crc = (crc<<1)^((crc&0x80)?0x07:0); }
+  return crc;
+}
 
 String get_byte(uint8_t message){
   String bits = "";
@@ -71,21 +79,32 @@ void setup(){
 }
 
 void loop(){
+    int mensajes_recv = 0;
     uint8_t buf[VW_MAX_MESSAGE_LEN];
 
     uint8_t buflen = VW_MAX_MESSAGE_LEN;
-
-    if (vw_get_message(buf, &buflen)){
-        if((int)buf[1]==ID_RECEPTOR && (int)buf[2]==ID){
-          digitalWrite(13, true);
-          digitalWrite(verde, HIGH);
-          get_message(buf);
-          digitalWrite(13, false);
-          delay(500);
-          digitalWrite(verde, LOW);
-      }
-    } 
-    if(messages[TAM_ARRAY - 1] != "H"){
+    while(mensajes_recv < TAM_ARRAY){
+      if (vw_get_message(buf, &buflen)){
+          if((int)buf[1]==ID_RECEPTOR && (int)buf[2]==ID){
+            /*uint8_t crc8_recv = (uint8_t)buf[6]
+            uint8_t crc8_calc = crc8(buf, 6);
+            if (crc8_recv != crc8_calc){
+              Serial.print("no paso prueba crc8");
+            }*/
+            digitalWrite(13, true);
+            digitalWrite(verde, HIGH);
+            get_message(buf);
+            if(messages[(int)buf[0]] != "H"){
+              mensajes_recv++;
+            }
+            Serial.print(mensajes_recv);
+            digitalWrite(13, false);
+            delay(500);
+            digitalWrite(verde, LOW);
+        }
+      } 
+    }
+    if(mensajes_recv == TAM_ARRAY){
       Serial.println("Imagen:");
       int cont = 0;
       for (String elem : messages){
@@ -104,6 +123,7 @@ void loop(){
           }     
         }
       }
+      mensajes_recv = 0;
       //Aqui deberia vaciar ;;
       for (int i = 0; i < TAM_ARRAY; i++) {
         messages[i] = "H"; // Asigna "H" a cada posición
