@@ -80,6 +80,8 @@ void loop() {
     int bits_restantes = longitud_bits - enviados;
     int largoParcial = min(TAMANO_MENSAJE, bits_restantes / 8);
 
+    memset(paquete, 0, TAMANO_TOTAL);
+
     paquete[0] = secuencia;
     paquete[1] = id_emisor;
     paquete[2] = id_receptor;
@@ -99,13 +101,13 @@ void loop() {
     // Rellenar con ceros si largoParcial es menor que TAMANO_MENSAJE
     if (largoParcial < TAMANO_MENSAJE) {
       for (int i = largoParcial; i < TAMANO_MENSAJE; i++) {
-        paquete[3 + i] = 0;  // Rellenar con 0
+        paquete[3 + i] = 0b00000000;  // Rellenar con 0
       }
     }
 
-    paquete[3 + largoParcial] = crc8(paquete, 3 + largoParcial);
+    paquete[3 + TAMANO_MENSAJE] = crc8(paquete, 3 + TAMANO_MENSAJE);
 
-    vw_send(paquete, 4 + largoParcial); // + 1 para crc (listo)
+    vw_send(paquete, 4 + TAMANO_MENSAJE); // + 1 para crc (listo)
     vw_wait_tx();
 
     Serial.print("Enviado: ");
@@ -113,15 +115,14 @@ void loop() {
     Serial.print(" EMISOR: "); Serial.print(id_emisor);
     Serial.print(" RECEPTOR: "); Serial.print(id_receptor);
     Serial.print(" MSG: ");
-    for (int i = 0; i < largoParcial; i++) {
+    for (int i = 0; i < TAMANO_MENSAJE; i++) {
       uint8_t b = paquete[3 + i];
       for (int j = 7; j >= 0; j--) {
         Serial.print((b >> j) & 1);
       }
     }
-    Serial.println();
 
-    //Serial.print(" CRC: "); Serial.print(paquete[3 + largoParcial], HEX);
+    Serial.print(" CRC: "); Serial.print(paquete[3 + TAMANO_MENSAJE]);
     Serial.println();
 
     enviados += largoParcial * 8;
