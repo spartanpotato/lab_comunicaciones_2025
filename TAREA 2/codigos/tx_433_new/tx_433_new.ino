@@ -59,6 +59,9 @@ const uint8_t id_receptor = 2;
 
 int azul = 4;
 
+const uint16_t e = 5;
+const uint16_t n = 731;
+
 uint8_t crc8(const uint8_t *d, uint8_t n) {
   uint8_t crc = 0x00;
   while(n--) { crc ^= *d++; for(uint8_t i=0; i<8; i++) crc = (crc<<1)^((crc&0x80)?0x07:0); }
@@ -92,13 +95,23 @@ void loop() {
 
     for (int i = 0; i < largoParcial; i++) {
       uint8_t b = 0;
+
+      // Convertir 8 bits en un número (M)
       for (int j = 0; j < 8; j++) {
         int bitIndex = enviados + i * 8 + j;
         if (bitIndex < longitud_bits) {
           b |= (mensajeCompleto[bitIndex] - '0') << (7 - j);
         }
       }
-      paquete[3 + i] = b;
+
+      // Cifrado: C = M^e mod n
+      uint16_t M = b;
+      uint16_t C = 1;
+      for (uint8_t k = 0; k < e; k++) {
+        C = (C * M) % n;
+      }
+
+      paquete[3 + i] = (uint8_t)C; // Guardamos el valor cifrado en el paquete
     }
 
     // Rellenar con ceros si largoParcial es menor que TAMANO_MENSAJE
@@ -119,10 +132,11 @@ void loop() {
     Serial.print(" RECEPTOR: "); Serial.print(id_receptor);
     Serial.print(" MSG: ");
     for (int i = 0; i < TAMANO_MENSAJE; i++) {
-      uint8_t b = paquete[3 + i];
+      /*uint8_t b = paquete[3 + i];
       for (int j = 7; j >= 0; j--) {
         Serial.print((b >> j) & 1);
-      }
+      }*/
+      Serial.print(paquete[3 + i]);
     }
 
     Serial.print(" CRC: "); Serial.print(paquete[3 + TAMANO_MENSAJE]);
