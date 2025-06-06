@@ -13,6 +13,9 @@ pin 14 Arduino pin digital 2
 pin 15 5v
 */
 
+// Clave publica: (e, n) = (5, 731)
+// Clave privada: (d, n) = (269, 731)
+
 #include <VirtualWire.h>
 
 int verde = 4;

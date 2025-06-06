@@ -10,6 +10,9 @@ pin 09 tierra
 pin 10 5v
 */
 
+// Clave publica: (e, n) = (5, 731)
+// Clave privada: (d, n) = (269, 731)
+
 
 #include <VirtualWire.h>
 
