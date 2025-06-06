@@ -10,8 +10,8 @@ pin 09 tierra
 pin 10 5v
 */
 
-// Clave publica: (e, n) = (5, 731)
-// Clave privada: (d, n) = (269, 731)
+// Clave publica: (e, n) = (3, 257)
+// Clave privada: (d, n) = (171, 257)
 
 
 #include <VirtualWire.h>
@@ -59,8 +59,8 @@ const uint8_t id_receptor = 2;
 
 int azul = 4;
 
-const uint16_t e = 5;
-const uint16_t n = 731;
+const uint8_t e = 3;
+const uint16_t n = 257;
 
 uint8_t crc8(const uint8_t *d, uint8_t n) {
   uint8_t crc = 0x00;
@@ -105,13 +105,13 @@ void loop() {
       }
 
       // Cifrado: C = M^e mod n
-      uint16_t M = b;
+      uint8_t M = b;
       uint16_t C = 1;
       for (uint8_t k = 0; k < e; k++) {
         C = (C * M) % n;
       }
 
-      paquete[3 + i] = (uint8_t)C; // Guardamos el valor cifrado en el paquete
+      paquete[3 + i] = uint8_t(C); // Guardamos el valor cifrado en el paquete
     }
 
     // Rellenar con ceros si largoParcial es menor que TAMANO_MENSAJE
@@ -152,5 +152,3 @@ void loop() {
 
   delay(5000);
 }
-
-
