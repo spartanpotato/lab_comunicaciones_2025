@@ -26,6 +26,9 @@ int const TAM = 7; //Bytes totales utilizados en el mensaje
 int const TAM_ARRAY = (32*32)/24 + 1;
 String messages[TAM_ARRAY];
 
+int d = 269;
+int n = 731; // 17*43
+
 
 // Seq  ID  ID_Receptor Message checksum
 // []   []      []      [][][]     []
@@ -59,6 +62,22 @@ bool check_crc8(uint8_t *d, uint8_t crc_recv){
     return false;
   }
 }
+
+uint8_t descifrado_asimetrico(uint8_t c, int d, int n) {
+  unsigned long result = 1;
+  unsigned long base = c;
+  
+  while (d > 0) {
+    if (d % 2 == 1) {
+      result = (result * base) % n;
+    }
+    base = (base * base) % n;
+    d = d / 2;
+  }
+
+  return (uint8_t)result;
+}
+
 
 uint8_t crc8(uint8_t *d, uint8_t n) {
   uint8_t crc = 0x00;
@@ -108,6 +127,22 @@ void get_message(uint8_t* message) {
     Serial.println(sequence);
   }
 }
+
+void get_message_asimetrico(uint8_t* message) {
+  int sequence = (int)message[0];
+  if(sequence >= 0 && sequence < TAM_ARRAY) { // Verificación más segura
+    String image = "";
+    for(int i = 3; i < TAM-1; i++) {
+      uint8_t decrypted_byte = descifrado_asimetrico(message[i], d, n);
+      image += get_byte(decrypted_byte);
+    }
+    messages[sequence] = image;
+  } else {
+    Serial.print("Secuencia inválida: ");
+    Serial.println(sequence);
+  }
+}
+
 void setup(){
     Serial.begin(9600);
     Serial.println("Configurando Recepcion");
@@ -132,7 +167,12 @@ void loop() {
       if (check_crc8(buf, buf[6])) {
         digitalWrite(13, true);
         digitalWrite(verde, HIGH);
-        get_message(buf);
+        get_message_asimetrico(buf);
+        Serial.print("Mensaje recibido: ");
+        Serial.print(messages[3]); 
+        Serial.print(messages[4]);
+        Serial.print(messages[5]);
+        Serial.print("");
         digitalWrite(13, false);
         delay(500);
         digitalWrite(verde, LOW);
