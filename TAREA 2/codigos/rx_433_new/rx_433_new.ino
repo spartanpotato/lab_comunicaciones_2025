@@ -22,11 +22,10 @@ int const MESSAGE_TAM = 3; //Bytes
 int const ID = 2;
 int const ID_RECEPTOR = 2;
 int const TAM = 7; //Bytes totales utilizados en el mensaje
-int const TAM_ARRAY = (32*32)/24 + 1;
+int const TAM_ARRAY = 128;
 int const CLAVE = 3;
-int cont;
-String messages[TAM_ARRAY];
-bool seq_recv[TAM_ARRAY];
+uint8_t messages[TAM_ARRAY];
+bool seq_recv[43];
 
 void descifrarCesar(uint8_t mensaje[]) {
     for (int i = 3; i < TAM-1; i++) { 
@@ -35,8 +34,10 @@ void descifrarCesar(uint8_t mensaje[]) {
 }
 
 void resetReceiver() {
-    for (int i = 0; i < TAM_ARRAY; i++) {
-        messages[i] = "H";
+    /*for (int i = 0; i < TAM_ARRAY; i++) {
+        messages[i] = 0b00000000;
+    }*/
+    for (int i = 0; i < 43; i++) {
         seq_recv[i] = true;
     }
 }
@@ -44,22 +45,16 @@ void resetReceiver() {
 // Seq  ID  ID_Receptor Message checksum
 // []   []      []      [][][]     []
 
-// bool is_full(){
-//   for(String elem: messages){
-//     if(elem == "H"){
-//       return false;
-//     }
-//   }
-//   return true;
-// }
+
 bool is_full() {
-  for(int i = 0; i < TAM_ARRAY; i++) { // Usar índice explícito
-    if(messages[i] == "H") {
+  for(int i = 0; i < 43; i++) { // Usar índice explícito
+    if(seq_recv[i]) {
       return false;
     }
   }
   return true;
 }
+
 bool isnt_checked(uint8_t *d){
   int sequence = (int)d[0];
   return seq_recv[sequence];
@@ -91,44 +86,35 @@ uint8_t crc8(uint8_t *d, uint8_t n) {
 void get_message(uint8_t* message) {
     int sequence = (int)message[0];
     if (sequence >= 0 && sequence < TAM_ARRAY) {
-        String bits = "";
-        for (int i = 3; i < 6; i++) {  // Bytes 3,4,5 (datos)
-            for (int j = 7; j >= 0; j--) {
-                bits += ((message[i] >> j) & 1) ? '1' : '0';
-            }
+        for (int i = 0; i < 3; i++) {  // Bytes 3,4,5 (datos)
+            messages[sequence * 3 + i] = message[3 + i];
         }
-        messages[sequence] = bits;  // Guarda los 24 bits como String
         seq_recv[sequence] = false;
     }
 }
 
-String reconstructImage() {
-    String fullImage = "";
-    for (int i = 0; i < TAM_ARRAY; i++) {
-        if (messages[i] != "H") {  // Si el paquete fue recibido
-            fullImage += messages[i];  // Concatena los 24 bits
-        }
+void imprimirBits(const uint8_t *array, const size_t TAMANO_ARRAY) {
+  for(size_t i = 0; i < TAMANO_ARRAY; i++) {
+    // Recorremos cada bit del byte, empezando por el más significativo (bit 7)
+    for(int8_t bit = 7; bit >= 0; bit--) {
+      if(array[i] & (1 << bit)) {
+        Serial.print("1");
+      } else {
+        Serial.print("0");
+      }
+      
+      // Salto de línea cada 32 bits (contamos bits impresos)
+      static uint16_t contadorBits = 0;
+      contadorBits++;
+      if(contadorBits % 32 == 0) {
+        Serial.println();
+      }
     }
-    // Asegura que tenga exactamente 1024 bits (32x32)
-    fullImage = fullImage.substring(0, 32 * 32); 
-    return fullImage;
-}
-
-void printImage() {
-    String image = reconstructImage(); // Obtiene todos los bits en una String
-    Serial.println("Imagen 32x32:");
-    for (int i = 0; i < 32; i++) {
-        for (int j = 0; j < 32; j++) {
-            int pos = i * 32 + j;
-            if (pos < image.length()) {
-                Serial.print(image[pos]);
-            } else {
-                Serial.print("?"); // Si falta algún bit
-            }
-        }
-        Serial.println(); // Salto de línea cada 32 bits
-    }
-    Serial.println("¡Imagen completa!");
+  }
+  // Salto de línea final si no terminó en múltiplo de 32
+  if(TAMANO_ARRAY * 8 % 32 != 0) {
+    Serial.println();
+  }
 }
 
 // void get_message(uint8_t* message) {
@@ -153,10 +139,11 @@ void setup(){
     vw_set_rx_pin(2);
     vw_rx_start();
     pinMode(verde, OUTPUT);
-    cont = 0;
     for (int i = 0; i < TAM_ARRAY; i++) {
+        messages[i] = 0b00000000; // Asigna "H" a cada posición
+    }
+    for (int i = 0; i < 43; i++) {
         seq_recv[i] = true;
-        messages[i] = "H"; // Asigna "H" a cada posición
     }
 }
 
@@ -176,51 +163,8 @@ void loop() {
         }
   }
   if (is_full()) {
-    printImage(); // ¡Ahora imprime correctamente en 32x32!
+    imprimirBits(messages, TAM_ARRAY); // ¡Ahora imprime correctamente en 32x32!
     resetReceiver(); // Reinicia para una nueva imagen
   }
-  
-  /*
-  if (vw_get_message(buf, &buflen)) {
-    // Verifica si el mensaje es el esperado
-    if ((int)buf[1] == ID_RECEPTOR && (int)buf[2] == ID) {
-      descifrarCesar(buf);
-      // Verifica si el mensaje mantiene el checksum
-      if (check_crc8(buf, buf[6]) && isnt_checked(buf)) {
-        digitalWrite(13, true);
-        digitalWrite(verde, HIGH);
-        get_message(buf);
-        digitalWrite(13, false);
-        delay(500);
-        digitalWrite(verde, LOW);
-      }
-    }
-    */
-
-  //Imprime la imagen
-  // if (is_full()) {
-  //   Serial.println("Imagen:");
-  //   for (String elem : messages) {
-  //     for (char c : elem) {
-  //       if (c == '0') {
-  //         Serial.print("0");
-  //         cont++;
-  //       } else {
-  //         Serial.print("1");
-  //         cont++;
-  //       }
-  //       if ((cont) == 32) {
-  //         Serial.println("");
-  //         cont = 0;
-  //       }
-  //     }
-  //   }
-  //   Serial.println("¡LISTO!");
-  //   // memset(messages,"H",sizeof(messages));
-  //   for (int i = 0; i < TAM_ARRAY; i++) {
-  //       seq_recv[i] = true;
-  //       messages[i] = "H";
-  //   }
-  // }
 }
 
