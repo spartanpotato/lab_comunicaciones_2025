@@ -50,7 +50,7 @@ const char* mensajeCompleno = "Este es un mensaje muy largo que no cabe en un so
 const int TAMANO_MENSAJE = 3;
 const int TAMANO_TOTAL = 1 + 1 + 1 + 1 + TAMANO_MENSAJE; // +1 para CRC8
 uint8_t paquete[TAMANO_TOTAL];
-
+const int CLAVE = 3;
 const uint8_t id_emisor = 2;
 const uint8_t id_receptor = 2;
 
@@ -60,6 +60,12 @@ uint8_t crc8(const uint8_t *d, uint8_t n) {
   uint8_t crc = 0x00;
   while(n--) { crc ^= *d++; for(uint8_t i=0; i<8; i++) crc = (crc<<1)^((crc&0x80)?0x07:0); }
   return crc;
+}
+
+void cifrarCesar(uint8_t mensaje[]) {
+    for (int i = 3; i < TAMANO_MENSAJE + 3; i++) { 
+        mensaje[i] = (mensaje[i] + CLAVE) % 256; // Aplicamos desplazamiento con módulo
+    }
 }
 
 void setup() {
@@ -106,7 +112,7 @@ void loop() {
     }
 
     paquete[3 + TAMANO_MENSAJE] = crc8(paquete, 3 + TAMANO_MENSAJE);
-
+    cifrarCesar(paquete);
     vw_send(paquete, 4 + TAMANO_MENSAJE); // + 1 para crc (listo)
     vw_wait_tx();
 
