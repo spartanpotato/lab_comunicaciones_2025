@@ -28,7 +28,6 @@ int const ID_RECEPTOR = 2;
 int const TAM = 7; //Bytes totales utilizados en el mensaje
 int const TAM_ARRAY = 128;
 uint8_t mensaje_completo[TAM_ARRAY];
-//String messages[TAM_ARRAY];
 bool recibido[43];
 
 int d = 171;
@@ -43,7 +42,6 @@ int const CLAVE = 3;
 bool is_full() {
   for(int i = 0; i < 43; i++) { // Usar índice explícito
     if(!recibido[i]) {
-      //Serial.print(i);
       return false;
     }
   }
@@ -104,18 +102,9 @@ String get_byte(uint8_t message){
 void get_message_asimetrico(uint8_t* message) {
   int sequence = (int)message[0];
   if(sequence >= 0 && sequence < TAM_ARRAY && recibido[sequence] == 0) { // Verificación más segura
-    //String image = "";
-    //uint8_t decrypted_byte = 0b00000000;
     descifrarCesar(message);
     for(int i = 0; i < 3; i++) {
-      //uint8_t decrypted_byte = descifrar_RSA(message[3 + i], d, n);
       mensaje_completo[sequence * 3 + i] = message[3 + i];
-      //recibido[sequence * 3 + i] = 1;
-      //String byte = get_byte(decrypted_byte);
-      //image += byte;
-      /*Serial.print(" SEQ: "); Serial.print(sequence);
-      Serial.print(" Byte: "); Serial.print(byte);
-      Serial.print("");*/
     }
     recibido[sequence] = 1;
   } else {
