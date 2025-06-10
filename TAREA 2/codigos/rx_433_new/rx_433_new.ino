@@ -13,9 +13,6 @@ pin 14 Arduino pin digital 2
 pin 15 5v
 */
 
-// Clave publica: (e, n) = (3, 257)
-// Clave privada: (d, n) = (171, 257)
-
 #include <VirtualWire.h>
 
 
@@ -29,9 +26,6 @@ int const TAM = 7; //Bytes totales utilizados en el mensaje
 int const TAM_ARRAY = 128;
 uint8_t mensaje_completo[TAM_ARRAY];
 bool recibido[43];
-
-int d = 171;
-int n = 257; // 17*43
 
 int const CLAVE = 3;
 
