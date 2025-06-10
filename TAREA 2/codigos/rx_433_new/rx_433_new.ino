@@ -61,19 +61,6 @@ bool check_crc8(uint8_t *d, uint8_t crc_recv){
   }
 }
 
-uint8_t descifrar_RSA(uint8_t C, int d, int n) {
-    uint32_t resultado = 1;  // Usar uint32_t
-    uint32_t base = C;
-    while (d > 0) {
-        if (d % 2 == 1) {
-            resultado = (resultado * base) % n;
-        }
-        base = (base * base) % n;
-        d = d / 2;
-    }
-    return (uint8_t)resultado;
-}
-
 void descifrarCesar(uint8_t mensaje[]) {
     for (int i = 3; i < TAM-1; i++) { 
         mensaje[i] = (mensaje[i] - CLAVE + 256) % 256; // Ajuste modular para evitar valores negativos
@@ -99,7 +86,7 @@ String get_byte(uint8_t message){
   return bits;
 }
 
-void get_message_asimetrico(uint8_t* message) {
+void get_message_simetrico(uint8_t* message) {
   int sequence = (int)message[0];
   if(sequence >= 0 && sequence < TAM_ARRAY && recibido[sequence] == 0) { // Verificación más segura
     descifrarCesar(message);
@@ -165,7 +152,7 @@ void loop() {
       if (check_crc8(buf, buf[6])) {
         digitalWrite(13, true);
         digitalWrite(verde, HIGH);
-        get_message_asimetrico(buf);
+        get_message_simetrico(buf);
         Serial.println("Mensaje recibido: ");
         digitalWrite(13, false);
         delay(500);
