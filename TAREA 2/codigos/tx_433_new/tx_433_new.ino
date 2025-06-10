@@ -10,8 +10,12 @@ pin 09 tierra
 pin 10 5v
 */
 
+// Clave publica: (e, n) = (3, 257)
+// Clave privada: (d, n) = (171, 257)
+
 
 #include <VirtualWire.h>
+
 
 const uint8_t mensajeCompleto[128] = {
   0b11111111, 0b11111111, 0b11111111, 0b11111111,
@@ -48,22 +52,30 @@ const uint8_t mensajeCompleto[128] = {
   0b11111111, 0b11111111, 0b11111111, 0b11111111
 };
 
-
 const int TAMANO_MENSAJE = 3;
 const int TAMANO_TOTAL = 1 + 1 + 1 + 1 + TAMANO_MENSAJE; // +1 para CRC8
 uint8_t paquete[TAMANO_TOTAL];
 
-const int CLAVE = 3;
-
 const uint8_t id_emisor = 2;
 const uint8_t id_receptor = 2;
 
-int azul = 4;
+const int CLAVE = 3;
+
+const uint8_t e = 3;
+const uint16_t n = 257;
 
 uint8_t crc8(const uint8_t *d, uint8_t n) {
   uint8_t crc = 0x00;
   while(n--) { crc ^= *d++; for(uint8_t i=0; i<8; i++) crc = (crc<<1)^((crc&0x80)?0x07:0); }
   return crc;
+}
+
+uint16_t cifrar_RSA(uint8_t M, int e, int n) {
+    uint32_t resultado = 1;  // Usar uint32_t para mayor rango
+    for (uint8_t k = 0; k < e; k++) {
+        resultado = (resultado * M) % n;
+    }
+    return (uint16_t)resultado;
 }
 
 void cifrarCesar(uint8_t mensaje[]) {
@@ -98,8 +110,7 @@ void loop() {
 
 
     for (int i = 0; i < largoParcial; i++) {    
-      uint8_t M = mensajeCompleto[(enviados / 8) + i];
-      paquete[3 + i] = M;
+      paquete[3 + i] = mensajeCompleto[(enviados / 8) + i];
     }
 
     // Rellenar con ceros si largoParcial es menor que TAMANO_MENSAJE
@@ -109,9 +120,9 @@ void loop() {
       }
     }
 
-    paquete[3 + TAMANO_MENSAJE] = crc8(paquete, 3 + TAMANO_MENSAJE);
-
     cifrarCesar(paquete);
+
+    paquete[3 + TAMANO_MENSAJE] = crc8(paquete, 3 + TAMANO_MENSAJE);
 
     vw_send(paquete, 4 + TAMANO_MENSAJE); // + 1 para crc (listo)
     vw_wait_tx();
@@ -122,6 +133,10 @@ void loop() {
     Serial.print(" RECEPTOR: "); Serial.print(id_receptor);
     Serial.print(" MSG: ");
     for (int i = 0; i < TAMANO_MENSAJE; i++) {
+      /*uint8_t b = paquete[3 + i];
+      for (int j = 7; j >= 0; j--) {
+        Serial.print((b >> j) & 1);
+      }*/
       Serial.print(paquete[3 + i]);
     }
 
@@ -138,5 +153,3 @@ void loop() {
 
   delay(5000);
 }
-
-
