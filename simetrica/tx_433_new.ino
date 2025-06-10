@@ -16,39 +16,41 @@ pin 10 5v
 
 #include <VirtualWire.h>
 
-const char* mensajeCompleto = "11111111111111111111111111111111"
-"11111111111111111111111111111111"
-"11111111111111111111111111111111"
-"11111111111111111111111111111111"
-"11111111111111111111111111111111"
-"11111111111111111111111111111111"
-"11111111111111111111111111111111"
-"11111111111111111111111111111111"
-"11111111110011111111011111111111"
-"11111111000000111100000011111111"
-"11111110000000011000000001111111"
-"11111110000000000000000001111111"
-"11111100000000000000000000111111"
-"11111100000000000000000000111111"
-"11111100000000000000000000111111"
-"11111110000000000000000001111111"
-"11111110000000000000000001111111"
-"11111110000000000000000001111111"
-"11111111000000000000000011111111"
-"11111111100000000000000111111111"
-"11111111110000000000001111111111"
-"11111111111000000000011111111111"
-"11111111111100000000111111111111"
-"11111111111110000001111111111111"
-"11111111111111000011111111111111"
-"11111111111111111111111111111111"
-"11111111111111111111111111111111"
-"11111111111111111111111111111111"
-"11111111111111111111111111111111"
-"11111111111111111111111111111111"
-"11111111111111111111111111111111"
-"11111111111111111111111111111111";
-const char* mensajeCompleno = "Este es un mensaje muy largo que no cabe en un solo paquete de VirtualWire.";
+
+const uint8_t mensajeCompleto[128] = {
+  0b11111111, 0b11111111, 0b11111111, 0b11111111,
+  0b11111111, 0b11111111, 0b11111111, 0b11111111,
+  0b11111111, 0b11111111, 0b11111111, 0b11111111,
+  0b11111111, 0b11111111, 0b11111111, 0b11111111,
+  0b11111111, 0b11111111, 0b11111111, 0b11111111,
+  0b11111111, 0b11111111, 0b11111111, 0b11111111,
+  0b11111111, 0b11111111, 0b11111111, 0b11111111,
+  0b11111111, 0b11111111, 0b11111111, 0b11111111,
+  0b11111111, 0b11001111, 0b11110111, 0b11111111,
+  0b11111111, 0b00000011, 0b11000000, 0b11111111,
+  0b11111110, 0b00000001, 0b10000000, 0b01111111,
+  0b11111110, 0b00000000, 0b00000000, 0b01111111,
+  0b11111100, 0b00000000, 0b00000000, 0b00111111,
+  0b11111100, 0b00000000, 0b00000000, 0b00111111,
+  0b11111100, 0b00000000, 0b00000000, 0b00111111,
+  0b11111110, 0b00000000, 0b00000000, 0b01111111,
+  0b11111110, 0b00000000, 0b00000000, 0b01111111,
+  0b11111110, 0b00000000, 0b00000000, 0b01111111,
+  0b11111111, 0b00000000, 0b00000000, 0b11111111,
+  0b11111111, 0b10000000, 0b00000001, 0b11111111,
+  0b11111111, 0b11000000, 0b00000011, 0b11111111,
+  0b11111111, 0b11100000, 0b00000111, 0b11111111,
+  0b11111111, 0b11110000, 0b00001111, 0b11111111,
+  0b11111111, 0b11111000, 0b00011111, 0b11111111,
+  0b11111111, 0b11111100, 0b00111111, 0b11111111,
+  0b11111111, 0b11111111, 0b11111111, 0b11111111,
+  0b11111111, 0b11111111, 0b11111111, 0b11111111,
+  0b11111111, 0b11111111, 0b11111111, 0b11111111,
+  0b11111111, 0b11111111, 0b11111111, 0b11111111,
+  0b11111111, 0b11111111, 0b11111111, 0b11111111,
+  0b11111111, 0b11111111, 0b11111111, 0b11111111,
+  0b11111111, 0b11111111, 0b11111111, 0b11111111
+};
 
 const int TAMANO_MENSAJE = 3;
 const int TAMANO_TOTAL = 1 + 1 + 1 + 1 + TAMANO_MENSAJE; // +1 para CRC8
@@ -57,7 +59,7 @@ uint8_t paquete[TAMANO_TOTAL];
 const uint8_t id_emisor = 2;
 const uint8_t id_receptor = 2;
 
-int azul = 4;
+const int CLAVE = 3;
 
 const uint8_t e = 3;
 const uint16_t n = 257;
@@ -66,6 +68,20 @@ uint8_t crc8(const uint8_t *d, uint8_t n) {
   uint8_t crc = 0x00;
   while(n--) { crc ^= *d++; for(uint8_t i=0; i<8; i++) crc = (crc<<1)^((crc&0x80)?0x07:0); }
   return crc;
+}
+
+uint16_t cifrar_RSA(uint8_t M, int e, int n) {
+    uint32_t resultado = 1;  // Usar uint32_t para mayor rango
+    for (uint8_t k = 0; k < e; k++) {
+        resultado = (resultado * M) % n;
+    }
+    return (uint16_t)resultado;
+}
+
+void cifrarCesar(uint8_t mensaje[]) {
+    for (int i = 3; i < TAMANO_MENSAJE + 3; i++) { 
+        mensaje[i] = (mensaje[i] + CLAVE) % 256; // Aplicamos desplazamiento con módulo
+    }
 }
 
 void setup() {
@@ -77,8 +93,8 @@ void setup() {
 }
 
 void loop() {
-  int longitud_bits = strlen(mensajeCompleto);
-  int longitud = longitud_bits / 8;
+  int longitud_bytes = sizeof(mensajeCompleto);
+  int longitud_bits = longitud_bytes * 8;
   int enviados = 0;
   uint8_t secuencia = 0;
 
@@ -93,25 +109,8 @@ void loop() {
     paquete[2] = id_receptor;
 
 
-    for (int i = 0; i < largoParcial; i++) {
-      uint8_t b = 0;
-
-      // Convertir 8 bits en un número (M)
-      for (int j = 0; j < 8; j++) {
-        int bitIndex = enviados + i * 8 + j;
-        if (bitIndex < longitud_bits) {
-          b |= (mensajeCompleto[bitIndex] - '0') << (7 - j);
-        }
-      }
-
-      // Cifrado: C = M^e mod n
-      uint8_t M = b;
-      uint16_t C = 1;
-      for (uint8_t k = 0; k < e; k++) {
-        C = (C * M) % n;
-      }
-
-      paquete[3 + i] = uint8_t(C); // Guardamos el valor cifrado en el paquete
+    for (int i = 0; i < largoParcial; i++) {    
+      paquete[3 + i] = mensajeCompleto[(enviados / 8) + i];
     }
 
     // Rellenar con ceros si largoParcial es menor que TAMANO_MENSAJE
@@ -120,6 +119,8 @@ void loop() {
         paquete[3 + i] = 0b00000000;  // Rellenar con 0
       }
     }
+
+    cifrarCesar(paquete);
 
     paquete[3 + TAMANO_MENSAJE] = crc8(paquete, 3 + TAMANO_MENSAJE);
 
