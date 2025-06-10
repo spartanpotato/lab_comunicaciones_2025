@@ -9,11 +9,6 @@ pin 08 antena externa
 pin 09 tierra
 pin 10 5v
 */
-
-// Clave publica: (e, n) = (3, 257)
-// Clave privada: (d, n) = (171, 257)
-
-
 #include <VirtualWire.h>
 
 
@@ -61,22 +56,12 @@ const uint8_t id_receptor = 2;
 
 const int CLAVE = 3;
 
-const uint8_t e = 3;
-const uint16_t n = 257;
-
 uint8_t crc8(const uint8_t *d, uint8_t n) {
   uint8_t crc = 0x00;
   while(n--) { crc ^= *d++; for(uint8_t i=0; i<8; i++) crc = (crc<<1)^((crc&0x80)?0x07:0); }
   return crc;
 }
 
-uint16_t cifrar_RSA(uint8_t M, int e, int n) {
-    uint32_t resultado = 1;  // Usar uint32_t para mayor rango
-    for (uint8_t k = 0; k < e; k++) {
-        resultado = (resultado * M) % n;
-    }
-    return (uint16_t)resultado;
-}
 
 void cifrarCesar(uint8_t mensaje[]) {
     for (int i = 3; i < TAMANO_MENSAJE + 3; i++) { 
@@ -133,10 +118,6 @@ void loop() {
     Serial.print(" RECEPTOR: "); Serial.print(id_receptor);
     Serial.print(" MSG: ");
     for (int i = 0; i < TAMANO_MENSAJE; i++) {
-      /*uint8_t b = paquete[3 + i];
-      for (int j = 7; j >= 0; j--) {
-        Serial.print((b >> j) & 1);
-      }*/
       Serial.print(paquete[3 + i]);
     }
 
