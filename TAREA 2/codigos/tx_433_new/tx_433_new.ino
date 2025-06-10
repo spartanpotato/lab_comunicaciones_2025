@@ -124,10 +124,6 @@ void loop() {
     Serial.print(" RECEPTOR: "); Serial.print(id_receptor);
     Serial.print(" MSG: ");
     for (int i = 0; i < TAMANO_MENSAJE; i++) {
-      /*uint8_t b = paquete[3 + i];
-      for (int j = 7; j >= 0; j--) {
-        Serial.print((b >> j) & 1);
-      }*/
       Serial.print(paquete[3 + i]);
     }
 
